@@ -37,23 +37,21 @@ Note: `flac`, `ffmpeg`, and `inkscape` must be in your system's PATH.
 
  1. Create a directory named `tracks` and put the tracks in there that you want
     to include.
- 2. Create a file named `mkhitsgame.toml` next to the `tracks` directory, and
+ 2. Create a file named `config.toml` next to the `tracks` directory, and
     add the configuration as shown in the next section.
- 3. Run `mkhitsgame.py`. It will print statistics about the track distribution
+ 3. Run `main.py`. It will print statistics about the track distribution
     over years and decades, so you can tweak the track selection to balance out
     the game.
- 4. You now have two new directories: `build` and `out`. `out` contains the
-    tracks, compressed and anonymized, inside a `songs` subdirectory. It also
-    contains an `index.html` and `index.json`. These files contain no metadata,
-    and the file names are long enough to be virtually unguessable, so they are
-    safe to serve from a public webserver without additional authentication.
-    `build` contains the pdf with the cards, as well as intermediate svg files.
- 5. Upload the contents of `out` to your webserver.
+ 4. You now have two new directories: `build` and `out` (or the directory specified in `out_dir`). `out` contains the
+    tracks, compressed and anonymized, inside a `songs` subdirectory. These files contain no metadata,
+    and the file names are long enough to be virtually unguessable.
+    `build` contains the pdf with the cards, as well as intermediate svg files. It also contains the web player `index.html` and `index.json`. 
+ 5. Upload the contents of `out` (or the directory configured in `out_dir`) to your webserver.
  6. Print `build/cards.pdf` and cut out the cards.
 
 ## Configuration
 
-The `mkhitsgame.toml` file follows the following format:
+The `config.toml` file follows the following format:
 
 ```toml
 # The url prefix that your webserver will serve the track mp4s from.
