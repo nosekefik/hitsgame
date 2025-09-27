@@ -26,12 +26,12 @@ Hardware tools needed:
 
 Software tools needed:
 
- * Either [Nix 2.17.0][nix217], which can provide all the needed packages,
-   run with `nix develop --command ./mkhitsgame.py`.
- * Or install manually:
-   * Python ≥ 3.11 with `qrcode==7.4.2` package.
-   * ffmpeg 5.1.3 or n6.1.
-   * rsvg-convert (from librsvg) 2.55.1 or 2.57.1.
+ * Python ≥ 3.11. Install the required packages with `pip install -r requirements.txt`.
+ * flac (for `metaflac`).
+ * ffmpeg.
+ * inkscape.
+
+Note: `flac`, `ffmpeg`, and `inkscape` must be in your system's PATH.
 
 ## Preparation
 
@@ -43,10 +43,11 @@ Software tools needed:
     over years and decades, so you can tweak the track selection to balance out
     the game.
  4. You now have two new directories: `build` and `out`. `out` contains the
-    tracks, compressed and anonymized. These files contain no metadata, and the
-    file names are long enough to be virtually unguessable, so they are safe to
-    serve from a public webserver without additional authentication. `build`
-    contains the pdf with the cards, as well as intermediate svg files.
+    tracks, compressed and anonymized, inside a `songs` subdirectory. It also
+    contains an `index.html` and `index.json`. These files contain no metadata,
+    and the file names are long enough to be virtually unguessable, so they are
+    safe to serve from a public webserver without additional authentication.
+    `build` contains the pdf with the cards, as well as intermediate svg files.
  5. Upload the contents of `out` to your webserver.
  6. Print `build/cards.pdf` and cut out the cards.
 
@@ -59,7 +60,7 @@ The `mkhitsgame.toml` file follows the following format:
 url_prefix = "http://example.com/"
 
 # Font to use on the cards.
-font = "Cantarell"
+font = "Arial"
 
 # Whether to draw a grid around the cards. If you want to inspect the pdf on
 # your computer, or if you are cutting the cards with scissors, you probably
@@ -89,14 +90,6 @@ emoji = "🎸"
 out_dir = "custom_out"
 ```
 
-For the webserver, you need to configure it to serve the `.mp4` files with
-`audio/mp4` MIME type. For Nginx, you can do this using the following snippet:
-
-```nginx
-types {
-  audio/mp4 mp4;
-}
-```
 
 ## Deployment
 
