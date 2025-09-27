@@ -83,6 +83,10 @@ title = "Hits Custom Version!"
 # Default emoji for the game. Optional.
 # If not specified, the default emoji will be a guitar (🎸).
 emoji = "🎸"
+
+# The directory where the output files will be stored. Optional.
+# If not specified, the default directory 'out' will be used.
+out_dir = "custom_out"
 ```
 
 For the webserver, you need to configure it to serve the `.mp4` files with

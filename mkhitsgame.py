@@ -84,13 +84,13 @@ class Track(NamedTuple):
         """
         return self.md5sum + ".mp4"
 
-    def encode_to_out(self) -> None:
+    def encode_to_out(self, config: Config) -> None:
         """
         Encode the input flac file to an mp4 file in the output directory,
         under an unpredictable (but reproducible) name based on the audio
         md5sum. The resulting file has all metadata removed on purpose.
         """
-        out_dir = os.path.join("out", "songs")  # Updated output directory
+        out_dir = os.path.join(config.out_dir, "songs")
         os.makedirs(out_dir, exist_ok=True)
         out_fname = os.path.join(out_dir, self.out_fname())
         if os.path.isfile(out_fname):
@@ -138,7 +138,8 @@ class Config(NamedTuple):
     grid: bool
     crop_marks: bool
     language: str
-    title: str  # Added title attribute
+    title: str
+    out_dir: str = "out"  # Added optional out_dir with default value
 
     @staticmethod
     def load(fname: str) -> Config:
@@ -568,7 +569,7 @@ def load_texts(config: Config) -> dict:
 def main() -> None:
     # Load config and prepare output folders
     config = Config.load("mkhitsgame.toml")
-    os.makedirs("out", exist_ok=True)
+    os.makedirs(config.out_dir, exist_ok=True)
     os.makedirs("build", exist_ok=True)
     track_dir = "tracks"
 
@@ -585,7 +586,7 @@ def main() -> None:
             continue
         fname_full = os.path.join(track_dir, fname)
         track = Track.load(config, fname_full)
-        track.encode_to_out()
+        track.encode_to_out(config)
         tracks.append(track)
 
     # Sort tracks and group into tables (pages)
@@ -667,7 +668,7 @@ def main() -> None:
     print("Done! Output is build/cards.pdf.")
 
     # Generate JSON file
-    json_output_path = os.path.join("out", "index.json")
+    json_output_path = os.path.join(config.out_dir, "index.json")
     generate_json(tracks, json_output_path)
     print(f"JSON index generated at {json_output_path}")
 
@@ -675,7 +676,7 @@ def main() -> None:
     texts = load_texts(config)
 
     # Generate HTML file
-    html_output_path = os.path.join("out", "index.html")
+    html_output_path = os.path.join(config.out_dir, "index.html")
     generate_html(config, texts, html_output_path)
     print(f"HTML index generated at {html_output_path}")
 
