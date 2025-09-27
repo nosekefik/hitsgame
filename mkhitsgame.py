@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import html
+import json
 import os
 import os.path
 import subprocess
@@ -83,13 +84,15 @@ class Track(NamedTuple):
         """
         return self.md5sum + ".mp4"
 
-    def encode_to_out(self) -> None:
+    def encode_to_out(self, config: Config) -> None:
         """
         Encode the input flac file to an mp4 file in the output directory,
         under an unpredictable (but reproducible) name based on the audio
         md5sum. The resulting file has all metadata removed on purpose.
         """
-        out_fname = os.path.join("out", self.out_fname())
+        out_dir = os.path.join(config.out_dir, "songs")
+        os.makedirs(out_dir, exist_ok=True)
+        out_fname = os.path.join(out_dir, self.out_fname())
         if os.path.isfile(out_fname):
             return
         # fmt:off
@@ -132,16 +135,11 @@ class Track(NamedTuple):
 class Config(NamedTuple):
     url_prefix: str
     font: str
-
-    # Whether to include a grid in the output. This is good for inspecting the
-    # output on a computer, but for print, unless you want to use the grid as
-    # a guide for scissors to cut, you probably want to enable crop marks and
-    # disable the grid, so a slight misalignment when cutting does not result
-    # in a line near the edge of the card.
     grid: bool
-
-    # Whether to include crop marks in the output that indicate where to cut.
     crop_marks: bool
+    language: str
+    title: str
+    out_dir: str = "out"  # Added optional out_dir with default value
 
     @staticmethod
     def load(fname: str) -> Config:
@@ -335,10 +333,243 @@ class Table(NamedTuple):
         parts.append("</svg>")
         return "\n".join(parts)
 
+def generate_json(tracks: List[Track], output_path: str) -> None:
+    """
+    Generate a JSON file containing track information.
+    """
+    data = [
+        {
+            "year": track.year,
+            "title": track.title,
+            "artist": track.artist,
+            "md5sum": track.md5sum,
+            "url": track.url,
+            "filename": track.out_fname()  # Added filename field
+        }
+        for track in tracks
+    ]
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=4, ensure_ascii=False)
+
+def generate_html(config: Config, texts: dict, output_path: str) -> None:
+    """
+    Generate an HTML file using the provided configuration and texts.
+    """
+    title = getattr(config, "title", texts.get("title", "Hits!"))
+    emoji = getattr(config, "emoji", "🎸")
+
+    html_content = f"""<!DOCTYPE html>
+<html lang="{config.language}">
+<head>
+  <meta charset="UTF-8">
+  <title>{title}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {{
+      background: linear-gradient(135deg, #1a1a1a 0%, #5d0000 100%);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Montserrat', 'Verdana', sans-serif;
+    }}
+    .container {{
+      width: 100vw;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }}
+    .big-btn {{
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #b60000;
+      color: #fff;
+      font-size: 2.2em;
+      font-weight: 700;
+      border: none;
+      border-radius: 50px;
+      padding: 38px 60px;
+      box-shadow: 0 2px 28px #000c, 0 0px 0px #fff6 inset;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.18s;
+      outline: none;
+      letter-spacing: 1px;
+      margin-bottom: 20px;
+      user-select: none;
+      touch-action: manipulation;
+      position: relative;
+      text-shadow: 0 2px 7px #0008;
+      overflow: hidden;
+    }}
+    .big-btn:active {{
+      background: #5d0000;
+      color: #eee;
+      box-shadow: 0 2px 16px #b60000;
+      transform: scale(0.98);
+    }}
+    .icon {{
+      margin-right: 20px;
+      font-size: 2em;
+      vertical-align: middle;
+      filter: drop-shadow(0 2px 5px #0007);
+      transition: transform 0.5s cubic-bezier(.68,-0.55,.27,1.55), color .4s;
+    }}
+    .big-btn.playing .icon {{
+      transform: rotate(-30deg) scale(1.15);
+      color: #ffd700;
+      animation: swing 1.1s infinite cubic-bezier(.68,-0.55,.27,1.55) alternate;
+    }}
+    .big-btn.paused .icon {{
+      transform: none;
+      color: #fff;
+      animation: none;
+    }}
+    .big-btn.playing {{
+      animation: pulse-btn 1s infinite alternate;
+      background: #d40000;
+      color: #fff;
+      box-shadow: 0 4px 38px #d40000a0;
+    }}
+    @keyframes pulse-btn {{
+      from {{ box-shadow: 0 2px 28px #d40000a0, 0 0px 0px #fff6 inset; }}
+      to {{ box-shadow: 0 6px 54px #ff0033a0, 0 0px 0px #fff6 inset; transform: scale(1.05);}}
+    }}
+    @keyframes swing {{
+      0% {{ transform: rotate(-30deg) scale(1.15);}}
+      50% {{ transform: rotate(30deg) scale(1.15);}}
+      100% {{ transform: rotate(-30deg) scale(1.15);}}
+    }}
+    @media (max-width: 600px) {{
+      .big-btn {{ font-size: 1.3em; padding: 22px 10vw; }}
+      .icon {{ font-size: 1.5em; margin-right: 10px; }}
+    }}
+    h1 {{
+      color: #fff;
+      font-size: 2em;
+      font-weight: 700;
+      margin-bottom: 28px;
+      text-shadow: 0 2px 7px #0008;
+      letter-spacing: 1px;
+      user-select: none;
+    }}
+  </style>
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <h1>{title}</h1>
+    <button class="big-btn paused" id="playBtn">
+      <span class="icon" id="emoji">{emoji}</span>
+      {texts['button_play']}
+    </button>
+    <audio id="audioPlayer" src="" preload="auto" style="display:none;"></audio>
+  </div>
+  <script>
+    function getMp4NameFromUrl() {{
+      const path = window.location.pathname;
+      const mp4Regex = /^\/([a-zA-Z0-9_-]+)\.mp4$/;
+      const match = path.match(mp4Regex);
+      if (match) {{
+        return match[1] + ".mp4";
+      }}
+      return null;
+    }}
+    const mp4 = getMp4NameFromUrl();
+    const src = mp4 ? `/songs/${{mp4}}` : null;
+
+    const audio = document.getElementById('audioPlayer');
+    const playBtn = document.getElementById('playBtn');
+    const emoji = document.getElementById('emoji');
+
+    function setBtnState(isPlaying) {{
+      if (isPlaying) {{
+        playBtn.classList.add('playing');
+        playBtn.classList.remove('paused');
+        playBtn.innerHTML = `<span class='icon' id='emoji'>{emoji}</span> {texts['button_pause']}`;
+      }} else {{
+        playBtn.classList.remove('playing');
+        playBtn.classList.add('paused');
+        playBtn.innerHTML = `<span class='icon' id='emoji'>{emoji}</span> {texts['button_play']}`;
+      }}
+    }}
+
+    if (!mp4) {{
+      playBtn.textContent = "{texts['no_song_detected']}";
+      playBtn.disabled = true;
+      playBtn.style.background = "#444";
+      playBtn.style.color = "#ccc";
+      playBtn.style.cursor = "not-allowed";
+      if (emoji) emoji.remove();
+    }} else {{
+      audio.src = src;
+      let playing = false;
+
+      playBtn.addEventListener('click', function() {{
+        if (audio.paused) {{
+          audio.play();
+          setBtnState(true);
+        }} else {{
+          audio.pause();
+          setBtnState(false);
+        }}
+      }});
+
+      document.body.addEventListener('touchstart', function() {{
+        if (audio.paused) {{
+          audio.play();
+          setBtnState(true);
+        }}
+      }}, {{ once: true }});
+
+      audio.addEventListener('play', function() {{
+        setBtnState(true);
+      }});
+      audio.addEventListener('pause', function() {{
+        setBtnState(false);
+      }});
+      audio.addEventListener('ended', function() {{
+        setBtnState(false);
+      }});
+
+      // Attempt autoplay
+      setTimeout(() => {{
+        audio.play().catch(() => {{
+          setBtnState(false);
+        }});
+      }}, 100);
+    }}
+  </script>
+</body>
+</html>"""
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(html_content)
+
+def load_texts(config: Config) -> dict:
+    """
+    Load the appropriate translation file based on the language in the config.
+    Default to English if the specified language file is not found.
+    """
+    lang_file = os.path.join("translations", f"{config.language}.json")
+    default_file = os.path.join("translations", "en.json")
+
+    if os.path.isfile(lang_file):
+        with open(lang_file, "r", encoding="utf-8") as f:
+            return json.load(f)
+    else:
+        print(f"Warning: Translation file for '{config.language}' not found. Falling back to English.")
+        with open(default_file, "r", encoding="utf-8") as f:
+            return json.load(f)
+
 def main() -> None:
     # Load config and prepare output folders
     config = Config.load("mkhitsgame.toml")
-    os.makedirs("out", exist_ok=True)
+    os.makedirs(config.out_dir, exist_ok=True)
     os.makedirs("build", exist_ok=True)
     track_dir = "tracks"
 
@@ -355,7 +586,7 @@ def main() -> None:
             continue
         fname_full = os.path.join(track_dir, fname)
         track = Track.load(config, fname_full)
-        track.encode_to_out()
+        track.encode_to_out(config)
         tracks.append(track)
 
     # Sort tracks and group into tables (pages)
@@ -414,14 +645,17 @@ def main() -> None:
             f"--export-filename={pdf_file}",
             "--export-background=white"
         ])
-        # Wait until the PDF file exists (max 5 seconds)
-        for _ in range(50):
+        for _ in range(20):
             if os.path.isfile(pdf_file):
                 break
             time.sleep(0.1)
         if not os.path.isfile(pdf_file):
             print(f"ERROR: PDF was not generated: {pdf_file}")
             sys.exit(1)
+
+    # Wait before merging PDFs (20 seconds)
+    print("Waiting 15 seconds to ensure all PDFs are ready before merging...")
+    time.sleep(15)
 
     # Merge all PDFs into build/cards.pdf
     print("Merging PDFs into build/cards.pdf...")
@@ -432,6 +666,19 @@ def main() -> None:
     merger.write("build/cards.pdf")
     merger.close()
     print("Done! Output is build/cards.pdf.")
+
+    # Generate JSON file
+    json_output_path = os.path.join(config.out_dir, "index.json")
+    generate_json(tracks, json_output_path)
+    print(f"JSON index generated at {json_output_path}")
+
+    # Load texts from translations/ca.json
+    texts = load_texts(config)
+
+    # Generate HTML file
+    html_output_path = os.path.join(config.out_dir, "index.html")
+    generate_html(config, texts, html_output_path)
+    print(f"HTML index generated at {html_output_path}")
 
 if __name__ == "__main__":
     main()

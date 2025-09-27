@@ -1,5 +1,7 @@
 # Hitsgame
 
+This is a customized version based on the original [Hitsgame by ruuda](https://github.com/ruuda/hitsgame).
+
 Build your own version of the game [Hitster][hitster]. The resulting cards
 contain a QR code that point to an audio file on a webserver, no Spotify is
 needed to play. The program generates a pdf with cards like this:
@@ -54,7 +56,7 @@ The `mkhitsgame.toml` file follows the following format:
 
 ```toml
 # The url prefix that your webserver will serve the track mp4s from.
-url_prefix = "https://example.com/"
+url_prefix = "http://example.com/"
 
 # Font to use on the cards.
 font = "Cantarell"
@@ -69,6 +71,22 @@ grid = true
 # Whether to include crop marks at the sides of the page. If you are cutting
 # with a paper cutter, you should enable this to know where to cut.
 crop_marks = false
+
+# Default language for the application. Optional.
+# If not specified, English ('en') will be used.
+language = "en"
+
+# Title for the game. Optional.
+# If not specified, the default title from the translation file will be used.
+title = "Hits Custom Version!"
+
+# Default emoji for the game. Optional.
+# If not specified, the default emoji will be a guitar (🎸).
+emoji = "🎸"
+
+# The directory where the output files will be stored. Optional.
+# If not specified, the default directory 'out' will be used.
+out_dir = "custom_out"
 ```
 
 For the webserver, you need to configure it to serve the `.mp4` files with
@@ -79,6 +97,29 @@ types {
   audio/mp4 mp4;
 }
 ```
+
+## Deployment
+
+The contents of the `out` directory should be uploaded to a web server, such as Nginx, to serve the game files. Below is an example Nginx configuration:
+
+```nginx
+server {
+    listen 80;
+    server_name example.com/;
+
+    root /var/www/html;
+
+    location /songs/ {
+        try_files $uri =404;
+    }
+
+    location / {
+        try_files /index.html =404;
+    }
+}
+```
+
+This configuration ensures that the `songs` directory serves the audio files, and the root serves the `index.html` file.
 
 ## How to play
 
