@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import html
+import json
 import os
 import os.path
 import subprocess
@@ -335,6 +336,24 @@ class Table(NamedTuple):
         parts.append("</svg>")
         return "\n".join(parts)
 
+def generate_json(tracks: List[Track], output_path: str) -> None:
+    """
+    Generate a JSON file containing track information.
+    """
+    data = [
+        {
+            "year": track.year,
+            "title": track.title,
+            "artist": track.artist,
+            "md5sum": track.md5sum,
+            "url": track.url,
+            "filename": track.out_fname()  # Added filename field
+        }
+        for track in tracks
+    ]
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=4, ensure_ascii=False)
+
 def main() -> None:
     # Load config and prepare output folders
     config = Config.load("mkhitsgame.toml")
@@ -432,6 +451,11 @@ def main() -> None:
     merger.write("build/cards.pdf")
     merger.close()
     print("Done! Output is build/cards.pdf.")
+
+    # Generate JSON file
+    json_output_path = os.path.join("out", "index.json")
+    generate_json(tracks, json_output_path)
+    print(f"JSON index generated at {json_output_path}")
 
 if __name__ == "__main__":
     main()
