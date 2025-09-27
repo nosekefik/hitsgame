@@ -128,4 +128,3 @@ Hitsgame is free software. It is licensed under the
 [gplv3]:   https://www.gnu.org/licenses/gpl-3.0.html
 [hitster]: https://boardgamegeek.com/boardgame/318243/hitster
 [howplay]: https://hitstergame.com/en-us/how-to-play-premium/
-[nix217]:  https://nixos.org/download#nix-more
