@@ -15,6 +15,7 @@ import os.path
 import subprocess
 import sys
 import tomllib
+import time
 
 import qrcode  # type: ignore
 
@@ -77,6 +78,9 @@ class Track(NamedTuple):
         return Track(year, fname, title, artist, md5sum, url)
 
     def out_fname(self) -> str:
+        """
+        Returns the output mp4 filename based on the md5sum.
+        """
         return self.md5sum + ".mp4"
 
     def encode_to_out(self) -> None:
@@ -170,9 +174,7 @@ def line_break_text(s: str) -> List[str]:
         d = abs(len(t) - len(b))
         if d < diff:
             top, bot, diff = t, b, d
-
     return [top, bot]
-
 
 def render_text_svg(x_mm: float, y_mm: float, s: str, class_: str) -> Iterable[str]:
     """
@@ -181,7 +183,6 @@ def render_text_svg(x_mm: float, y_mm: float, s: str, class_: str) -> Iterable[s
     lines = line_break_text(s)
     line_height_mm = 6
     h_mm = line_height_mm * len(lines)
-
     for i, line in enumerate(lines):
         dy_mm = line_height_mm * (1 + i) - h_mm / 2
         yield (
@@ -224,8 +225,9 @@ class Table(NamedTuple):
     ) -> str:
         """
         Render the front of the page as svg. The units are in millimeters.
+        Adds a white background and optional grid (with no black fill).
         """
-        # Size of the page.
+        # Size of the page and cards
         w_mm = 210
         h_mm = 297
         # Size of the cards / table cells. In the Hitster game I have, the
@@ -234,7 +236,6 @@ class Table(NamedTuple):
         # where the crop marks may fall into the non-printable region. So make
         # the cards slightly smaller so they are safe to print.
         side_mm = 62
-
         tw_mm = side_mm * self.width
         th_mm = side_mm * self.height
         hmargin_mm = (w_mm - tw_mm) / 2
@@ -244,11 +245,16 @@ class Table(NamedTuple):
         vmargin_mm = hmargin_mm
 
         parts: List[str] = []
+        # SVG header and white background
         parts.append(
             '<svg version="1.1" width="210mm" height="297mm" '
             'viewBox="0 0 210 297" '
             'xmlns="http://www.w3.org/2000/svg">'
         )
+        parts.append(
+            '<rect x="0" y="0" width="210" height="297" fill="white"/>'
+        )
+        # CSS styles for text and shapes
         parts.append(
             f"""
             <style>
@@ -260,12 +266,14 @@ class Table(NamedTuple):
             </style>
             """
         )
+        # Optional grid (no fill)
         if config.grid:
             parts.append(
                 f'<rect x="{hmargin_mm}" y="{vmargin_mm}" '
                 f'width="{tw_mm}" height="{th_mm}" '
-                'fill="transparent" stroke-linejoin="miter"/>'
+                'fill="none" stroke-linejoin="miter"/>'
             )
+        # Column lines and crop marks
         for ix in range(0, self.width + 1):
             x_mm = hmargin_mm + ix * side_mm
             if config.grid and ix > 0 and ix <= self.width:
@@ -278,7 +286,7 @@ class Table(NamedTuple):
                     f'<line x1="{x_mm}" y1="{vmargin_mm - 5}" x2="{x_mm}" y2="{vmargin_mm - 1}" />'
                     f'<line x1="{x_mm}" y1="{vmargin_mm + th_mm + 1}" x2="{x_mm}" y2="{vmargin_mm + th_mm + 5}" />'
                 )
-
+        # Row lines and crop marks
         for iy in range(0, self.height + 1):
             y_mm = vmargin_mm + iy * side_mm
             if config.grid and iy > 0 and iy <= self.height:
@@ -291,17 +299,13 @@ class Table(NamedTuple):
                     f'<line x1="{hmargin_mm - 5}" y1="{y_mm}" x2="{hmargin_mm - 1}" y2="{y_mm}" />'
                     f'<line x1="{hmargin_mm + tw_mm + 1}" y1="{y_mm}" x2="{hmargin_mm + tw_mm + 5}" y2="{y_mm}" />'
                 )
-
+        # Cards: QR or title/artist/year
         for i, track in enumerate(self.cells):
             if mode == "qr":
-                # Note, we mirror over the x-axis, to match the titles codes
-                # when printed double-sided.
+                # Centered and mirrored QR for double-sided printing
                 ix = self.width - 1 - (i % self.width)
                 iy = i // self.width
                 qr_path, qr_mm = track.qr_svg()
-                # I'm lazy so we center the QR codes, we don't resize them. If
-                # the urls get longer, then the QR codes will cover a larger
-                # area of the cards.
                 x_mm = hmargin_mm + ix * side_mm + (side_mm - qr_mm) / 2
                 y_mm = vmargin_mm + iy * side_mm + (side_mm - qr_mm) / 2
                 parts.append(f'<g transform="translate({x_mm}, {y_mm})">')
@@ -313,26 +317,26 @@ class Table(NamedTuple):
                 iy = i // self.width
                 x_mm = hmargin_mm + (ix + 0.5) * side_mm
                 y_mm = vmargin_mm + (iy + 0.5) * side_mm
+                # Year
                 parts.append(
                     f'<text x="{x_mm}" y="{y_mm + 6.5}" text-anchor="middle" '
                     f'class="year">{track.year}</text>'
                 )
+                # Artist and title
                 for part in render_text_svg(x_mm, y_mm - 19, track.artist, "artist"):
                     parts.append(part)
                 for part in render_text_svg(x_mm, y_mm + 18, track.title, "title"):
                     parts.append(part)
-
+        # Page footer (page number)
         parts.append(
             f'<text x="{w_mm - hmargin_mm}" y="{h_mm - hmargin_mm}" text-anchor="end" '
             f'class="footer">{html.escape(page_footer)}</text>'
         )
-
         parts.append("</svg>")
-
         return "\n".join(parts)
 
-
 def main() -> None:
+    # Load config and prepare output folders
     config = Config.load("mkhitsgame.toml")
     os.makedirs("out", exist_ok=True)
     os.makedirs("build", exist_ok=True)
@@ -345,6 +349,7 @@ def main() -> None:
     year_counts: Counter[int] = Counter()
     decade_counts: Counter[int] = Counter()
 
+    # Process all FLAC files in track_dir
     for fname in os.listdir(track_dir):
         if not fname.endswith(".flac"):
             continue
@@ -353,12 +358,12 @@ def main() -> None:
         track.encode_to_out()
         tracks.append(track)
 
+    # Sort tracks and group into tables (pages)
     tracks.sort()
     for track in tracks:
         table.append(track)
         year_counts[track.year] += 1
         decade_counts[10 * (track.year // 10)] += 1
-
         if table.is_full():
             tables.append(table)
             table = Table.new()
@@ -381,21 +386,52 @@ def main() -> None:
     print("\nTOTAL")
     print(f"{sum(decade_counts.values())} tracks")
 
-    # For every table, write the two pages as svg.
     pdf_inputs: List[str] = []
+    pdf_outputs: List[str] = []
+
+    # Generate SVG and PDF for each page side
     for i, table in enumerate(tables):
         p = i + 1
-        pdf_inputs.append(f"build/{p}a.svg")
-        pdf_inputs.append(f"build/{p}b.svg")
-        with open(pdf_inputs[-2], "w", encoding="utf-8") as f:
+        title_svg = f"build/{p}a.svg"
+        qr_svg = f"build/{p}b.svg"
+        title_pdf = f"build/{p}a.pdf"
+        qr_pdf = f"build/{p}b.pdf"
+        pdf_inputs.extend([title_svg, qr_svg])
+        pdf_outputs.extend([title_pdf, qr_pdf])
+        with open(title_svg, "w", encoding="utf-8") as f:
             f.write(table.render_svg(config, "title", f"{p}a"))
-        with open(pdf_inputs[-1], "w", encoding="utf-8") as f:
+        with open(qr_svg, "w", encoding="utf-8") as f:
             f.write(table.render_svg(config, "qr", f"{p}b"))
 
-    # Combine the svgs into a single pdf for easy printing.
-    cmd = ["rsvg-convert", "--format=pdf", "--output=build/cards.pdf", *pdf_inputs]
-    subprocess.check_call(cmd)
+    # Convert SVGs to PDFs using Inkscape,
+    # wait until each PDF exists before continuing (max 5 seconds)
+    for svg_file, pdf_file in zip(pdf_inputs, pdf_outputs):
+        print(f"Converting {svg_file} to {pdf_file} using Inkscape...")
+        subprocess.check_call([
+            "inkscape",
+            svg_file,
+            "--export-type=pdf",
+            f"--export-filename={pdf_file}",
+            "--export-background=white"
+        ])
+        # Wait until the PDF file exists (max 5 seconds)
+        for _ in range(50):
+            if os.path.isfile(pdf_file):
+                break
+            time.sleep(0.1)
+        if not os.path.isfile(pdf_file):
+            print(f"ERROR: PDF was not generated: {pdf_file}")
+            sys.exit(1)
 
+    # Merge all PDFs into build/cards.pdf
+    print("Merging PDFs into build/cards.pdf...")
+    from PyPDF2 import PdfMerger
+    merger = PdfMerger()
+    for pdf_file in pdf_outputs:
+        merger.append(pdf_file)
+    merger.write("build/cards.pdf")
+    merger.close()
+    print("Done! Output is build/cards.pdf.")
 
 if __name__ == "__main__":
     main()
