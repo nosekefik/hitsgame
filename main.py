@@ -30,15 +30,6 @@ def main():
     if not table.is_empty():
         tables.append(table)
 
-    print("YEAR STATISTICS")
-    for year, count in sorted(year_counts.items()):
-        print(f"{year}: {count:2} {'#' * count}")
-    print("\nDECADE STATISTICS")
-    for decade, count in sorted(decade_counts.items()):
-        print(f"{decade}s: {count:2} {'#' * count}")
-    print("\nTOTAL")
-    print(f"{sum(decade_counts.values())} tracks")
-
     from src.cards_generator import generate_cards
     generate_cards(tables, config)
     # Generate JSON file
@@ -49,6 +40,15 @@ def main():
     texts = load_texts(config)
     generate_html(config.out_dir, config, texts)
     print(f"Website generated in {config.out_dir}")
+    print(f"")
+    print(f"YEAR STATISTICS")
+    for year, count in sorted(year_counts.items()):
+        print(f"{year}: {count:2} {'#' * count}")
+    print(f"DECADE STATISTICS")
+    for decade, count in sorted(decade_counts.items()):
+        print(f"{decade}s: {count:2} {'#' * count}")
+    print(f"TOTAL: {sum(decade_counts.values())} tracks")
+
 
 if __name__ == "__main__":
     main()
