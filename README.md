@@ -1,57 +1,50 @@
 # Hitsgame
 
+## Table of Contents
+1. [Overview](#overview)
+2. [Requirements](#requirements)
+3. [Preparation](#preparation)
+4. [Configuration](#configuration)
+5. [Deployment](#deployment)
+6. [How to Play](#how-to-play)
+7. [License](#license)
+
+## Overview
+
 This is a customized version based on the original [Hitsgame by ruuda](https://github.com/ruuda/hitsgame).
 
-Build your own version of the game [Hitster][hitster]. The resulting cards
-contain a QR code that point to an audio file on a webserver, no Spotify is
-needed to play. The program generates a pdf with cards like this:
+Build your own version of the game [Hitster][hitster]. The resulting cards contain a QR code that points to an audio file on a webserver, no Spotify is needed to play. The program generates a PDF with cards like this:
 
 ![Two sides of an example output page](example.png)
 
-## Ingredients
+## Requirements
 
-Ingredients:
-
- * A collection of properly tagged flac files. These files must have the
-   `TITLE`, `ARTIST`, and `ORIGINALDATE` or `DATE` tags set.
- * A webserver that can serve static files.
- * Sheets of A4 paper, preferably 180 g/m².
- * Tokens from the original Hitster game, or a suitable replacement,
-   e.g. poker chips.
-
-Hardware tools needed:
-
- * A printer.
- * Preferably a paper cutter, alternatively scissors.
-
-Software tools needed:
-
- * Python ≥ 3.11. Install the required packages with `pip install -r requirements.txt`.
- * flac (for `metaflac`).
- * ffmpeg.
- * inkscape.
+- **Music files:** FLAC files with proper tags (`TITLE`, `ARTIST`, and `ORIGINALDATE` or `DATE`)
+- **Hardware:** Printer, paper cutter or scissors, A4 paper (180 g/m²), tokens (from Hitster or alternatives like poker chips)
+- **Software:**
+  - Python ≥ 3.11 (`pip install -r requirements.txt`)
+  - flac (for `metaflac`)
+  - ffmpeg
+  - inkscape
 
 Note: `flac`, `ffmpeg`, and `inkscape` must be in your system's PATH.
 
 ## Preparation
 
- 1. Create a directory named `tracks` and put the tracks in there that you want
-    to include.
- 2. Create a file named `config.toml` next to the `tracks` directory, and
-    add the configuration as shown in the next section.
- 3. Run `main.py`. It will print statistics about the track distribution
-    over years and decades, so you can tweak the track selection to balance out
-    the game.
- 4. You now have two new directories: `build` and `out` (or the directory specified in `out_dir`). `out` contains the
-    tracks, compressed and anonymized, inside a `songs` subdirectory. These files contain no metadata,
-    and the file names are long enough to be virtually unguessable.
-    `build` contains the pdf with the cards, as well as intermediate svg files. It also contains the web player `index.html` and `index.json`. 
- 5. Upload the contents of `out` (or the directory configured in `out_dir`) to your webserver.
- 6. Print `build/cards.pdf` and cut out the cards.
+1. Create a directory named `tracks` and add the music files you want to include.
+2. Create a file named `config.toml` next to the `tracks` directory, and add the configuration as shown in the [Configuration](#configuration) section.
+3. Run `main.py`. It will print statistics about the track distribution over years and decades, so you can tweak the track selection to balance out the game.
+4. After running the script, you will find a new directory: `out` (or the directory specified in `out_dir`). This directory contains:
+   - The tracks, compressed and anonymized, inside a `songs` subdirectory. These files have no metadata and the filenames are long enough to be virtually unguessable.
+   - The PDF file with the cards (`cards.pdf`).
+   - The web player files (`index.html`, `index.json`, and related assets).
+5. Upload the contents of yout `out` to your webserver.
+6. Print `cards.pdf` and cut out the cards.
+
 
 ## Configuration
 
-The `config.toml` file follows the following format:
+The `config.toml` file follows this format:
 
 ```toml
 # The url prefix that your webserver will serve the track mp4s from.
@@ -60,72 +53,63 @@ url_prefix = "http://example.com/"
 # Font to use on the cards.
 font = "Arial"
 
-# Whether to draw a grid around the cards. If you want to inspect the pdf on
-# your computer, or if you are cutting the cards with scissors, you probably
-# want to enable this. If you are cutting with a paper cutter, you should
-# disable the grid, because if you don't cut *exactly* on the line you'll end
-# up with ugly lines on the sides of the cards.
+# Draw grid: enable for scissors, disable for paper cutter.
 grid = true
 
-# Whether to include crop marks at the sides of the page. If you are cutting
-# with a paper cutter, you should enable this to know where to cut.
+# Whether to include crop marks at the sides of the page. If you are cutting with a paper cutter, you should enable this to know where to cut.
 crop_marks = false
 
-# Default language for the application. Optional.
-# If not specified, English ('en') will be used.
+# Default language (optional, defaults to 'en').
 language = "en"
 
-# Title for the game. Optional.
-# If not specified, the default title from the translation file will be used.
+# Game title (optional, defaults to 'Hits!').
 title = "Hits Custom Version!"
 
-# Default emoji for the game. Optional.
-# If not specified, the default emoji will be a guitar (🎸).
+# Default emoji (optional, defaults to '🎸').
 emoji = "🎸"
 
-# The directory where the output files will be stored. Optional.
-# If not specified, the default directory 'out' will be used.
+# Output directory (optional, defaults to 'out').
 out_dir = "custom_out"
 ```
 
 
+
 ## Deployment
 
-The contents of the `out` directory should be uploaded to a web server, such as Nginx, to serve the game files. Below is an example Nginx configuration:
+Upload the contents of the `out` directory to your web server (e.g., Nginx) to serve the game files. Example Nginx configuration:
 
 ```nginx
 server {
-    listen 80;
-    server_name example.com/;
+   listen 80;
+   server_name example.com/;
 
-    root /var/www/html;
+   root /var/www/html;
 
-    location /songs/ {
-        try_files $uri =404;
-    }
+   location /songs/ {
+      try_files $uri =404;
+   }
 
-    location ~* \.(html|css|js)$ {
-        try_files $uri =404;
-    }
+   location ~* \.(html|css|js)$ {
+      try_files $uri =404;
+   }
 
-    location / {
-        try_files /index.html =404;
-    }
+   location / {
+      try_files /index.html =404;
+   }
 }
 ```
 
 This configuration ensures that the `songs` directory serves the audio files, and the root serves the `index.html` file.
 
-## How to play
 
-Refer [the original game rules][howplay] for how to play the game itself. You
-do not need to connect Spotify. Scanning a QR code will open the track in your
-browser. Most browsers will auto-play the track.
+## How to Play
+
+Refer to [the original game rules][howplay] for how to play the game itself. You do not need to connect Spotify. Scanning a QR code will open the track in your browser. Most browsers will auto-play the track.
+
 
 ## License
 
-Hitsgame is free software. It is licensed under the
-[GNU General Public License][gplv3], version 3.
+Hitsgame is free software. It is licensed under the [GNU General Public License][gplv3], version 3.
 
 [gplv3]:   https://www.gnu.org/licenses/gpl-3.0.html
 [hitster]: https://boardgamegeek.com/boardgame/318243/hitster
