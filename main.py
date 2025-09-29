@@ -3,6 +3,7 @@ import time
 from collections import Counter
 from src.config import Config
 from src.cards_generator import Track, Table
+from src.tools import ensure_encoded_audio
 from src.json_generator import generate_json
 from src.html_generator import generate_html, load_texts
 
@@ -26,7 +27,8 @@ def main():
             continue
         fname_full = os.path.join(track_dir, fname)
         track = Track.load(config, fname_full)
-        track.encode_to_out(config)
+        # Ensure encoded audio exists in output
+        ensure_encoded_audio(track.fname, track.md5sum, config.out_dir)
         tracks.append(track)
 
     # Sort tracks and group into tables (pages)

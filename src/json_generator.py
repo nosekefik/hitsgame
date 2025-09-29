@@ -1,5 +1,6 @@
 import json
 from src.cards_generator import Track
+from src.tools import output_mp4_name
 
 def generate_json(tracks, output_path):
 	data = [
@@ -9,7 +10,7 @@ def generate_json(tracks, output_path):
 			"artist": track.artist,
 			"md5sum": track.md5sum,
 			"url": track.url,
-			"filename": track.out_fname()
+			"filename": output_mp4_name(track.md5sum)
 		}
 		for track in tracks
 	]

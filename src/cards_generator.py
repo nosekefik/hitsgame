@@ -1,8 +1,5 @@
-import os
 import html
 from typing import List, Iterable, Literal, Tuple, NamedTuple
-from collections import Counter
-import subprocess
 import sys
 import qrcode
 from qrcode.image.svg import SvgPathImage
@@ -36,20 +33,6 @@ class Track(NamedTuple):
 		url = config.url_prefix + md5sum + ".mp4"
 		year = int(date[0:4])
 		return Track(year, fname, title, artist, md5sum, url)
-
-	def out_fname(self) -> str:
-		return self.md5sum + ".mp4"
-
-	def encode_to_out(self, config: Config) -> None:
-		out_dir = os.path.join(config.out_dir, "songs")
-		os.makedirs(out_dir, exist_ok=True)
-		out_fname = os.path.join(out_dir, self.out_fname())
-		if os.path.isfile(out_fname):
-			return
-		subprocess.check_call([
-			"ffmpeg", "-i", self.fname, "-map", "0:a", "-map_metadata", "-1",
-			"-write_xing", "0", "-id3v2_version", "0", "-ac", "1", "-b:a", "192k", "-c:a", "aac", out_fname
-		])
 
 	def qr_svg(self) -> Tuple[str, int]:
 		qr = qrcode.make(self.url, image_factory=SvgPathImage, box_size=8)

@@ -113,7 +113,7 @@ def generate_html(config, texts, output_path):
             <span class="icon" id="emoji">{emoji}</span>
             {texts['button_play']}
         </button>
-        <audio id="audioPlayer" src="" preload="auto" style="display:none;"></audio>
+        <audio id="audioPlayer" src="" preload="metadata" type="audio/mp4" style="display:none;"></audio>
     </div>
     <script>
         function getMp4NameFromUrl() {{
