@@ -24,7 +24,6 @@ body {
     color: #fff;
     font-size: 2.2em;
     font-weight: 700;
-    border: none;
     border-radius: 50px;
     padding: 38px 60px;
     box-shadow: 0 2px 28px #000c, 0 0px 0px #fff6 inset;
@@ -89,4 +88,28 @@ h1 {
     text-shadow: 0 2px 7px #0008;
     letter-spacing: 1px;
     user-select: none;
+    word-break: break-word;
+    width: 100%;
+    text-align: center;
+}
+
+@media (max-width: 375px) {
+    h1 {
+        font-size: 1.2em;
+    }
+    .big-btn {
+        font-size: 1em;
+        padding: 16px 6vw;
+        border-radius: 40px;
+    }
+    .icon {
+        font-size: 1.2em;
+        margin-right: 6px;
+    }
+}
+
+@media (min-width: 900px) {
+    h1 {
+        font-size: 3em;
+    }
 }

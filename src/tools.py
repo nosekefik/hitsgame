@@ -1,3 +1,18 @@
+def process_tracks(track_dir: str, config) -> list:
+	from src.models.track import Track
+	"""
+	Process all FLAC files in track_dir, create Track objects, encode audio, sort and return the tracks list.
+	"""
+	tracks = []
+	for fname in os.listdir(track_dir):
+		if not fname.endswith(".flac"):
+			continue
+		fname_full = os.path.join(track_dir, fname)
+		track = Track.load(config, fname_full)
+		ensure_encoded_audio(track.fname, track.md5sum, config.out_dir)
+		tracks.append(track)
+	tracks.sort()
+	return tracks
 import os
 import subprocess
 import sys
@@ -16,7 +31,7 @@ def metaflac_get_tags(fname: str) -> Tuple[str, Dict[str, str]]:
 	lines = out.splitlines()
 	md5sum = lines[0]
 	if md5sum == "00000000000000000000000000000000":
-		print(f"{fname} has no embedded md5sum, re-encode with -f8")
+		print(f"{fname} has no embedded md5sum, please re-encode with -f8")
 		sys.exit(1)
 	tags = [line.split("=", maxsplit=1) for line in lines[1:]]
 	tags = [t for t in tags if len(t) == 2]
