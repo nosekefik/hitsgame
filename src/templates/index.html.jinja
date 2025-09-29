@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="{{ config.language }}">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="index.css">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>{{ title }}</h1>
+        <button class="big-btn paused" id="playBtn">
+            <span class="icon" id="emoji">{{ emoji|e }}</span>
+            {{ texts['button_play']|e }}
+        </button>
+        <audio id="audioPlayer" src="" preload="metadata" type="audio/mp4" style="display:none;"></audio>
+    </div>
+    <script src="index.js"></script>
+</body>
+</html>

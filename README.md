@@ -26,40 +26,39 @@ Hardware tools needed:
 
 Software tools needed:
 
- * Either [Nix 2.17.0][nix217], which can provide all the needed packages,
-   run with `nix develop --command ./mkhitsgame.py`.
- * Or install manually:
-   * Python ≥ 3.11 with `qrcode==7.4.2` package.
-   * ffmpeg 5.1.3 or n6.1.
-   * rsvg-convert (from librsvg) 2.55.1 or 2.57.1.
+ * Python ≥ 3.11. Install the required packages with `pip install -r requirements.txt`.
+ * flac (for `metaflac`).
+ * ffmpeg.
+ * inkscape.
+
+Note: `flac`, `ffmpeg`, and `inkscape` must be in your system's PATH.
 
 ## Preparation
 
  1. Create a directory named `tracks` and put the tracks in there that you want
     to include.
- 2. Create a file named `mkhitsgame.toml` next to the `tracks` directory, and
+ 2. Create a file named `config.toml` next to the `tracks` directory, and
     add the configuration as shown in the next section.
- 3. Run `mkhitsgame.py`. It will print statistics about the track distribution
+ 3. Run `main.py`. It will print statistics about the track distribution
     over years and decades, so you can tweak the track selection to balance out
     the game.
- 4. You now have two new directories: `build` and `out`. `out` contains the
-    tracks, compressed and anonymized. These files contain no metadata, and the
-    file names are long enough to be virtually unguessable, so they are safe to
-    serve from a public webserver without additional authentication. `build`
-    contains the pdf with the cards, as well as intermediate svg files.
- 5. Upload the contents of `out` to your webserver.
+ 4. You now have two new directories: `build` and `out` (or the directory specified in `out_dir`). `out` contains the
+    tracks, compressed and anonymized, inside a `songs` subdirectory. These files contain no metadata,
+    and the file names are long enough to be virtually unguessable.
+    `build` contains the pdf with the cards, as well as intermediate svg files. It also contains the web player `index.html` and `index.json`. 
+ 5. Upload the contents of `out` (or the directory configured in `out_dir`) to your webserver.
  6. Print `build/cards.pdf` and cut out the cards.
 
 ## Configuration
 
-The `mkhitsgame.toml` file follows the following format:
+The `config.toml` file follows the following format:
 
 ```toml
 # The url prefix that your webserver will serve the track mp4s from.
 url_prefix = "http://example.com/"
 
 # Font to use on the cards.
-font = "Cantarell"
+font = "Arial"
 
 # Whether to draw a grid around the cards. If you want to inspect the pdf on
 # your computer, or if you are cutting the cards with scissors, you probably
@@ -89,14 +88,6 @@ emoji = "🎸"
 out_dir = "custom_out"
 ```
 
-For the webserver, you need to configure it to serve the `.mp4` files with
-`audio/mp4` MIME type. For Nginx, you can do this using the following snippet:
-
-```nginx
-types {
-  audio/mp4 mp4;
-}
-```
 
 ## Deployment
 
@@ -110,6 +101,10 @@ server {
     root /var/www/html;
 
     location /songs/ {
+        try_files $uri =404;
+    }
+
+    location ~* \.(html|css|js)$ {
         try_files $uri =404;
     }
 
@@ -135,4 +130,3 @@ Hitsgame is free software. It is licensed under the
 [gplv3]:   https://www.gnu.org/licenses/gpl-3.0.html
 [hitster]: https://boardgamegeek.com/boardgame/318243/hitster
 [howplay]: https://hitstergame.com/en-us/how-to-play-premium/
-[nix217]:  https://nixos.org/download#nix-more
