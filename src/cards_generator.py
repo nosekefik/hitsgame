@@ -1,42 +1,62 @@
+import os
+import time
 import html
-from typing import List, Iterable, Literal, Tuple, NamedTuple
-import sys
-import qrcode
-from qrcode.image.svg import SvgPathImage
-from qrcode.compat.etree import ET
-from src.tools import metaflac_get_tags
-from src.config import Config
+import subprocess
+import shutil
+from typing import List, Iterable, Literal, NamedTuple
+from PyPDF2 import PdfMerger
+from src.models.track import Track
+from src.models.config import Config
 
-class Track(NamedTuple):
-	year: int
-	fname: str
-	title: str
-	artist: str
-	md5sum: str
-	url: str
-
-	@staticmethod
-	def load(config: Config, fname: str) -> "Track":
-		md5sum, tags = metaflac_get_tags(fname)
-		title = tags.get("TITLE")
-		artist = tags.get("ARTIST")
-		date = tags.get("ORIGINALDATE", tags.get("DATE"))
-		if title is None:
-			print(f"{fname}: No TITLE tag present.")
-			sys.exit(1)
-		if artist is None:
-			print(f"{fname}: No ARTIST tag present.")
-			sys.exit(1)
-		if date is None:
-			print(f"{fname}: No ORIGINALDATE or DATE tag present.")
-			sys.exit(1)
-		url = config.url_prefix + md5sum + ".mp4"
-		year = int(date[0:4])
-		return Track(year, fname, title, artist, md5sum, url)
-
-	def qr_svg(self) -> Tuple[str, int]:
-		qr = qrcode.make(self.url, image_factory=SvgPathImage, box_size=8)
-		return ET.tostring(qr.path).decode("ascii"), qr.pixel_size / 10
+def generate_cards(tables, config):
+	temp_dir = "temp"
+	out_dir = config.out_dir if hasattr(config, 'out_dir') else "out"
+	os.makedirs(temp_dir, exist_ok=True)
+	os.makedirs(out_dir, exist_ok=True)
+	pdf_inputs = []
+	pdf_outputs = []
+	# Generate SVG and PDF for each page side
+	for i, table in enumerate(tables):
+		p = i + 1
+		title_svg = os.path.join(temp_dir, f"{p}a.svg")
+		qr_svg = os.path.join(temp_dir, f"{p}b.svg")
+		title_pdf = os.path.join(temp_dir, f"{p}a.pdf")
+		qr_pdf = os.path.join(temp_dir, f"{p}b.pdf")
+		pdf_inputs.extend([title_svg, qr_svg])
+		pdf_outputs.extend([title_pdf, qr_pdf])
+		with open(title_svg, "w", encoding="utf-8") as f:
+			f.write(table.render_svg(config, "title", f"{p}a"))
+		with open(qr_svg, "w", encoding="utf-8") as f:
+			f.write(table.render_svg(config, "qr", f"{p}b"))
+	# Convert SVGs to PDFs using Inkscape
+	for svg_file, pdf_file in zip(pdf_inputs, pdf_outputs):
+		print(f"Converting {svg_file} to {pdf_file} using Inkscape...")
+		subprocess.check_call([
+			"inkscape", svg_file, "--export-type=pdf",
+			f"--export-filename={pdf_file}", "--export-background=white"
+		])
+		for _ in range(20):
+			if os.path.isfile(pdf_file):
+				break
+			time.sleep(0.1)
+		if not os.path.isfile(pdf_file):
+			print(f"ERROR: PDF was not generated: {pdf_file}")
+			exit(1)
+	print("Waiting 15 seconds to ensure all PDFs are ready before merging...")
+	time.sleep(15)
+	final_pdf = os.path.join(out_dir, "cards.pdf")
+	print(f"Merging PDFs into {final_pdf}...")
+	merger = PdfMerger()
+	for pdf_file in pdf_outputs:
+		merger.append(pdf_file)
+	merger.write(final_pdf)
+	merger.close()
+	print(f"Done! Output is {final_pdf}.")
+	# Remove temporary SVG and PDF files and temp dir
+	try:
+		shutil.rmtree(temp_dir)
+	except Exception as e:
+		print(f"Warning: could not remove temp dir {temp_dir}: {e}")
 
 def line_break_text(s: str) -> List[str]:
 	if len(s) < 24:

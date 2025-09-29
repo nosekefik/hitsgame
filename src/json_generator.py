@@ -1,5 +1,4 @@
 import json
-from src.cards_generator import Track
 from src.tools import output_mp4_name
 
 def generate_json(tracks, output_path):

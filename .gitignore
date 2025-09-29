@@ -1,5 +1,6 @@
 /build
 /out
+/temp
 /tracks
 config.toml
 __pycache__/
