@@ -1,0 +1,78 @@
+(function() {
+  function getMp4NameFromUrl() {
+    const path = window.location.pathname;
+    const mp4Regex = /^\/([a-zA-Z0-9_-]+)\.mp4$/;
+    const match = path.match(mp4Regex);
+    if (match) {
+      return match[1] + ".mp4";
+    }
+    return null;
+  }
+  const mp4 = getMp4NameFromUrl();
+  const src = mp4 ? `/songs/${mp4}` : null;
+
+  const audio = document.getElementById('audioPlayer');
+  const playBtn = document.getElementById('playBtn');
+  const emojiEl = document.getElementById('emoji');
+
+  // Expose translations and emoji to JS in a safe way
+  const TRANSLATIONS = {{ texts|tojson }};
+  const EMOJI = {{ emoji|tojson }};
+
+  function setBtnState(isPlaying) {
+    if (isPlaying) {
+      playBtn.classList.add('playing');
+      playBtn.classList.remove('paused');
+      playBtn.innerHTML = `<span class='icon' id='emoji'>${EMOJI}</span> ${TRANSLATIONS['button_pause']}`;
+    } else {
+      playBtn.classList.remove('playing');
+      playBtn.classList.add('paused');
+      playBtn.innerHTML = `<span class='icon' id='emoji'>${EMOJI}</span> ${TRANSLATIONS['button_play']}`;
+    }
+  }
+
+  if (!mp4) {
+    playBtn.textContent = TRANSLATIONS['no_song_detected'];
+    playBtn.disabled = true;
+    playBtn.style.background = "#444";
+    playBtn.style.color = "#ccc";
+    playBtn.style.cursor = "not-allowed";
+    if (emojiEl) emojiEl.remove();
+  } else {
+    audio.src = src;
+
+    playBtn.addEventListener('click', function() {
+      if (audio.paused) {
+        audio.play();
+        setBtnState(true);
+      } else {
+        audio.pause();
+        setBtnState(false);
+      }
+    });
+
+    document.body.addEventListener('touchstart', function() {
+      if (audio.paused) {
+        audio.play();
+        setBtnState(true);
+      }
+    }, { once: true });
+
+    audio.addEventListener('play', function() {
+      setBtnState(true);
+    });
+    audio.addEventListener('pause', function() {
+      setBtnState(false);
+    });
+    audio.addEventListener('ended', function() {
+      setBtnState(false);
+    });
+
+    // Attempt autoplay
+    setTimeout(() => {
+      audio.play().catch(() => {
+        setBtnState(false);
+      });
+    }, 100);
+  }
+})();

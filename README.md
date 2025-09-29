@@ -104,6 +104,10 @@ server {
         try_files $uri =404;
     }
 
+    location ~* \.(html|css|js)$ {
+        try_files $uri =404;
+    }
+
     location / {
         try_files /index.html =404;
     }
