@@ -1,46 +1,88 @@
 (function() {
+  const audio = document.getElementById('audioPlayer');
+  const playBtn = document.getElementById('playBtn');
+  const revealBtn = document.getElementById('revealBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const songInfo = document.getElementById('songInfo');
+  
+  const infoArtist = document.getElementById('infoArtist');
+  const infoTitle = document.getElementById('infoTitle');
+  const infoYear = document.getElementById('infoYear');
+
+  const TRANSLATIONS = {{ texts|tojson }};
+  const EMOJI = {{ emoji|tojson }};
+
+  let currentSong = null;
+  let songs = [];
+
   function getMp4NameFromUrl() {
     const path = window.location.pathname;
-    const mp4Regex = /^\/([a-zA-Z0-9_-]+)\.mp4$/;
-    const match = path.match(mp4Regex);
-    if (match) {
-      return match[1] + ".mp4";
+    // Handle both /filename.mp4 and /path/to/filename.mp4
+    const filename = path.split('/').pop();
+    if (filename.endsWith('.mp4')) {
+      return filename;
     }
     return null;
   }
-  const mp4 = getMp4NameFromUrl();
-  const src = mp4 ? `/songs/${mp4}` : null;
-
-  const audio = document.getElementById('audioPlayer');
-  const playBtn = document.getElementById('playBtn');
-  const emojiEl = document.getElementById('emoji');
-
-  // Expose translations and emoji to JS in a safe way
-  const TRANSLATIONS = {{ texts|tojson }};
-  const EMOJI = {{ emoji|tojson }};
 
   function setBtnState(isPlaying) {
     if (isPlaying) {
       playBtn.classList.add('playing');
       playBtn.classList.remove('paused');
-      playBtn.innerHTML = `<span class='icon' id='emoji'>${EMOJI}</span> ${TRANSLATIONS['button_pause']}`;
+      playBtn.innerHTML = `<span class='icon'>${EMOJI}</span> ${TRANSLATIONS['button_pause']}`;
     } else {
       playBtn.classList.remove('playing');
       playBtn.classList.add('paused');
-      playBtn.innerHTML = `<span class='icon' id='emoji'>${EMOJI}</span> ${TRANSLATIONS['button_play']}`;
+      playBtn.innerHTML = `<span class='icon'>${EMOJI}</span> ${TRANSLATIONS['button_play']}`;
     }
   }
 
-  if (!mp4) {
-    playBtn.textContent = TRANSLATIONS['no_song_detected'];
-    playBtn.disabled = true;
-    playBtn.style.background = "#444";
-    playBtn.style.color = "#ccc";
-    playBtn.style.cursor = "not-allowed";
-    if (emojiEl) emojiEl.remove();
-  } else {
-    audio.src = src;
+  async function loadRandomSong(autoPlay = false) {
+    try {
+      if (songs.length === 0) {
+        const response = await fetch('index.json');
+        songs = await response.json();
+      }
+      
+      if (songs.length === 0) {
+        playBtn.textContent = TRANSLATIONS['no_song_detected'];
+        return;
+      }
 
+      // Reset UI for new song
+      audio.pause();
+      audio.currentTime = 0;
+      setBtnState(false);
+      songInfo.style.display = 'none';
+      revealBtn.style.display = 'block';
+
+      const randomIndex = Math.floor(Math.random() * songs.length);
+      currentSong = songs[randomIndex];
+      
+      audio.src = `songs/${currentSong.filename}`;
+      revealBtn.disabled = false;
+      
+      // Pre-fill info but keep hidden
+      infoArtist.textContent = currentSong.artist;
+      infoTitle.textContent = currentSong.title;
+      infoYear.textContent = currentSong.year;
+
+      if (autoPlay) {
+        audio.play().catch(e => console.log("Auto-play blocked:", e));
+        setBtnState(true);
+      }
+    } catch (e) {
+      console.error("Error loading songs:", e);
+      playBtn.textContent = "Error loading index.json";
+    }
+  }
+
+  const mp4 = getMp4NameFromUrl();
+
+  if (mp4) {
+    // QR MODE: Just play the specific song
+    audio.src = `songs/${mp4}`;
+    
     playBtn.addEventListener('click', function() {
       if (audio.paused) {
         audio.play();
@@ -51,28 +93,47 @@
       }
     });
 
-    document.body.addEventListener('touchstart', function() {
-      if (audio.paused) {
-        audio.play();
-        setBtnState(true);
-      }
+    // Touch any to start for mobile
+    document.body.addEventListener('touchstart', () => {
+        if (audio.paused) audio.play();
     }, { once: true });
-
-    audio.addEventListener('play', function() {
-      setBtnState(true);
-    });
-    audio.addEventListener('pause', function() {
-      setBtnState(false);
-    });
-    audio.addEventListener('ended', function() {
-      setBtnState(false);
-    });
 
     // Attempt autoplay
     setTimeout(() => {
-      audio.play().catch(() => {
-        setBtnState(false);
-      });
+      audio.play().catch(() => setBtnState(false));
     }, 100);
+
+  } else {
+    // SINGLE PLAYER MODE: Random songs + reveal + next
+    revealBtn.style.display = 'flex';
+    nextBtn.style.display = 'flex';
+
+    playBtn.addEventListener('click', function() {
+      if (!audio.src) return;
+      if (audio.paused) {
+        audio.play();
+        setBtnState(true);
+      } else {
+        audio.pause();
+        setBtnState(false);
+      }
+    });
+
+    revealBtn.addEventListener('click', function() {
+      songInfo.style.display = 'block';
+      revealBtn.style.display = 'none';
+    });
+
+    nextBtn.addEventListener('click', function() {
+      loadRandomSong(true);
+    });
+
+    loadRandomSong(false);
   }
+
+  // Common listeners
+  audio.addEventListener('play', () => setBtnState(true));
+  audio.addEventListener('pause', () => setBtnState(false));
+  audio.addEventListener('ended', () => setBtnState(false));
+
 })();

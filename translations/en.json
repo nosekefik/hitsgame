@@ -2,5 +2,10 @@
   "title": "Hits!",
   "button_play": "Listen!",
   "button_pause": "Pause",
-  "no_song_detected": "No song detected"
+  "no_song_detected": "No song detected",
+  "button_reveal": "Reveal Info",
+  "artist_label": "Artist",
+  "song_label": "Song",
+  "year_label": "Year",
+  "button_next": "Another song"
 }

@@ -30,16 +30,21 @@ def main():
     if not table.is_empty():
         tables.append(table)
 
-    from src.cards_generator import generate_cards
-    generate_cards(tables, config)
     # Generate JSON file
     json_output_path = os.path.join(config.out_dir, "index.json")
     generate_json(tracks, json_output_path)
     print(f"JSON index generated at {json_output_path}")
+
     # Load texts from translations
     texts = load_texts(config)
     generate_html(config.out_dir, config, texts)
     print(f"Website generated in {config.out_dir}")
+
+    from src.cards_generator import generate_cards
+    try:
+        generate_cards(tables, config)
+    except Exception as e:
+        print(f"Warning: Cards generation failed: {e}")
     print(f"\nYEAR STATISTICS")
     for year, count in sorted(year_counts.items()):
         print(f"{year}: {count:2} {'#' * count}")
