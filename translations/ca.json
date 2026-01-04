@@ -2,5 +2,10 @@
   "title": "Hits!",
   "button_play": "Escolta!",
   "button_pause": "Pausa",
-  "no_song_detected": "No s'ha detectat cap cançó"
+  "no_song_detected": "No s'ha detectat cap cançó",
+  "button_reveal": "Veure Dades",
+  "artist_label": "Artista",
+  "song_label": "Cançó",
+  "year_label": "Any",
+  "button_next": "Altra cançó"
 }

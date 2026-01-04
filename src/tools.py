@@ -1,3 +1,9 @@
+import os
+import subprocess
+from typing import Dict, Tuple		
+import hashlib
+import soundfile as sf
+
 def process_tracks(track_dir: str, config) -> list:
 	from src.models.track import Track
 	"""
@@ -13,10 +19,6 @@ def process_tracks(track_dir: str, config) -> list:
 		tracks.append(track)
 	tracks.sort()
 	return tracks
-import os
-import subprocess
-import sys
-from typing import Dict, Tuple
 
 def metaflac_get_tags(fname: str) -> Tuple[str, Dict[str, str]]:
 	"""
@@ -31,8 +33,10 @@ def metaflac_get_tags(fname: str) -> Tuple[str, Dict[str, str]]:
 	lines = out.splitlines()
 	md5sum = lines[0]
 	if md5sum == "00000000000000000000000000000000":
-		print(f"{fname} has no embedded md5sum, please re-encode with -f8")
-		sys.exit(1)
+		print(f"{fname} has no embedded md5sum, calculating from audio data...")
+		with sf.SoundFile(fname) as f:
+			pcm = f.read(dtype='int16')
+			md5sum = hashlib.md5(pcm.tobytes()).hexdigest()
 	tags = [line.split("=", maxsplit=1) for line in lines[1:]]
 	tags = [t for t in tags if len(t) == 2]
 	return md5sum, {k.upper(): v for k, v in tags}

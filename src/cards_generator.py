@@ -29,8 +29,8 @@ def generate_cards(tables, config):
 		with open(qr_svg, "w", encoding="utf-8") as f:
 			f.write(table.render_svg(config, "qr", f"{p}b"))
 	# Convert SVGs to PDFs using Inkscape
+	print(f"Converting svgs to pdf using Inkscape...")
 	for svg_file, pdf_file in zip(pdf_inputs, pdf_outputs):
-		print(f"Converting {svg_file} to {pdf_file} using Inkscape...")
 		subprocess.check_call([
 			"inkscape", svg_file, "--export-type=pdf",
 			f"--export-filename={pdf_file}", "--export-background=white"

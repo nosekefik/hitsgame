@@ -10,10 +10,28 @@
 <body>
     <div class="container">
         <h1>{{ title }}</h1>
-        <button class="big-btn paused" id="playBtn">
-            <span class="icon" id="emoji">{{ emoji|e }}</span>
-            {{ texts['button_play']|e }}
-        </button>
+        <div class="player-controls">
+            <button class="big-btn paused" id="playBtn">
+                <span class="icon" id="emoji">{{ emoji|e }}</span>
+                {{ texts['button_play']|e }}
+            </button>
+
+            <!-- Single Player extras -->
+            <button class="reveal-btn" id="revealBtn" style="display:none;" disabled>
+                {{ texts['button_reveal']|e }}
+            </button>
+
+            <button class="reveal-btn secondary" id="nextBtn" style="display:none;">
+                {{ texts['button_next']|e }}
+            </button>
+
+            <div class="song-info" id="songInfo">
+                <p><span class="label">{{ texts['artist_label']|e }}:</span> <span id="infoArtist"></span></p>
+                <p><span class="label">{{ texts['song_label']|e }}:</span> <span id="infoTitle"></span></p>
+                <p><span class="label">{{ texts['year_label']|e }}:</span> <span id="infoYear"></span></p>
+            </div>
+        </div>
+
         <audio id="audioPlayer" src="" preload="metadata" type="audio/mp4" style="display:none;"></audio>
     </div>
     <script src="index.js"></script>
