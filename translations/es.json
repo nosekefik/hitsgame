@@ -6,6 +6,7 @@
   "button_reveal": "Ver Datos",
   "artist_label": "Artista",
   "song_label": "Canción",
+  "album_label": "Álbum",
   "year_label": "Año",
   "button_next": "Otra canción"
 }

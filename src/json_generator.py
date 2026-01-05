@@ -1,15 +1,19 @@
 import json
-from src.tools import output_mp4_name
+from src.tools import output_ogg_name
 
 def generate_json(tracks, output_path):
+	# Get url_prefix from config through first track
+	url_prefix = tracks[0].url.rsplit('/', 1)[0] + '/' if tracks else ""
+	
 	data = [
 		{
 			"year": track.year,
 			"title": track.title,
 			"artist": track.artist,
-			"md5sum": track.md5sum,
+			"album": track.album,
 			"url": track.url,
-			"filename": output_mp4_name(track.md5sum)
+			"url_ogg": f"{url_prefix}songs/{track.md5sum}.ogg",
+			"cover": track.cover_url
 		}
 		for track in tracks
 	]

@@ -7,7 +7,9 @@
   
   const infoArtist = document.getElementById('infoArtist');
   const infoTitle = document.getElementById('infoTitle');
+  const infoAlbum = document.getElementById('infoAlbum');
   const infoYear = document.getElementById('infoYear');
+  const infoCover = document.getElementById('infoCover');
 
   const TRANSLATIONS = {{ texts|tojson }};
   const EMOJI = {{ emoji|tojson }};
@@ -15,11 +17,11 @@
   let currentSong = null;
   let songs = [];
 
-  function getMp4NameFromUrl() {
+  function getOggNameFromUrl() {
     const path = window.location.pathname;
-    // Handle both /filename.mp4 and /path/to/filename.mp4
+    // Handle both /filename.ogg and /path/to/filename.ogg
     const filename = path.split('/').pop();
-    if (filename.endsWith('.mp4')) {
+    if (filename.endsWith('.ogg')) {
       return filename;
     }
     return null;
@@ -59,13 +61,15 @@
       const randomIndex = Math.floor(Math.random() * songs.length);
       currentSong = songs[randomIndex];
       
-      audio.src = `songs/${currentSong.filename}`;
+      audio.src = `${currentSong.url_ogg}`;
       revealBtn.disabled = false;
       
       // Pre-fill info but keep hidden
       infoArtist.textContent = currentSong.artist;
       infoTitle.textContent = currentSong.title;
+      infoAlbum.textContent = currentSong.album || '';
       infoYear.textContent = currentSong.year;
+      infoCover.src = currentSong.cover || '';
 
       if (autoPlay) {
         audio.play().catch(e => console.log("Auto-play blocked:", e));
@@ -77,11 +81,16 @@
     }
   }
 
-  const mp4 = getMp4NameFromUrl();
+  const ogg = getOggNameFromUrl();
 
-  if (mp4) {
+  if (ogg) {
     // QR MODE: Just play the specific song
-    audio.src = `songs/${mp4}`;
+    audio.src = `songs/${ogg}`;
+    
+    // Hide game UI elements in QR mode
+    revealBtn.style.display = 'none';
+    nextBtn.style.display = 'none';
+    songInfo.style.display = 'none';
     
     playBtn.addEventListener('click', function() {
       if (audio.paused) {

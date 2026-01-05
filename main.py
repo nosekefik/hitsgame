@@ -1,4 +1,6 @@
 import os
+import argparse
+import shutil
 from collections import Counter
 from src.models.config import Config
 from src.json_generator import generate_json
@@ -7,13 +9,28 @@ from src.html_generator import generate_html, load_texts
 # Main orchestration
 
 def main():
+    parser = argparse.ArgumentParser(description="Generate hits game")
+    parser.add_argument("--force", action="store_true", help="Force regeneration of all OGG and cover files")
+    args = parser.parse_args()
+    
     config = Config.load("config.toml")
     os.makedirs(config.out_dir, exist_ok=True)
     os.makedirs("build", exist_ok=True)
     track_dir = "tracks"
+    
+    # If --force, delete all generated OGG and cover files
+    if args.force:
+        songs_dir = os.path.join(config.out_dir, "songs")
+        covers_dir = os.path.join(config.out_dir, "covers")
+        if os.path.exists(songs_dir):
+            print(f"Deleting all files in {songs_dir}...")
+            shutil.rmtree(songs_dir)
+        if os.path.exists(covers_dir):
+            print(f"Deleting all files in {covers_dir}...")
+            shutil.rmtree(covers_dir)
 
     from src.tools import process_tracks
-    tracks = process_tracks(track_dir, config)
+    tracks = process_tracks(track_dir, config, force=args.force)
     # Build tables from tracks
     from src.cards_generator import Table
     table = Table.new()

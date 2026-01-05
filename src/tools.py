@@ -4,7 +4,7 @@ from typing import Dict, Tuple
 import hashlib
 import soundfile as sf
 
-def process_tracks(track_dir: str, config) -> list:
+def process_tracks(track_dir: str, config, force: bool = False) -> list:
 	from src.models.track import Track
 	"""
 	Process all FLAC files in track_dir, create Track objects, encode audio, sort and return the tracks list.
@@ -14,8 +14,12 @@ def process_tracks(track_dir: str, config) -> list:
 		if not fname.endswith(".flac"):
 			continue
 		fname_full = os.path.join(track_dir, fname)
+		# Extract cover and encode audio BEFORE loading Track so cover_url can be properly set
+		md5sum, _ = metaflac_get_tags(fname_full)
+		ensure_encoded_audio(fname_full, md5sum, config.out_dir, force=force)
+		extract_cover_art(fname_full, md5sum, config.out_dir, force=force)
+		# Now load the Track with cover already extracted
 		track = Track.load(config, fname_full)
-		ensure_encoded_audio(track.fname, track.md5sum, config.out_dir)
 		tracks.append(track)
 	tracks.sort()
 	return tracks
@@ -42,44 +46,66 @@ def metaflac_get_tags(fname: str) -> Tuple[str, Dict[str, str]]:
 	return md5sum, {k.upper(): v for k, v in tags}
 
 
-def encode_flac_to_aac_mp4(input_path: str, out_dir: str, out_name: str) -> str:
+def output_ogg_name(md5sum: str) -> str:
+	"""Return canonical output file name for an OGG file given its md5sum."""
+	return md5sum + ".ogg"
+
+
+def extract_cover_art(input_path: str, md5sum: str, out_dir: str, force: bool = False) -> bool:
 	"""
-	Encode a FLAC (or any audio supported by ffmpeg) file to mono AAC-in-MP4 with
+	Extract cover art from FLAC file and save to <out_dir>/covers/<md5sum>.jpg.
+	Returns True if cover was extracted, False otherwise.
+	"""
+	covers_dir = os.path.join(out_dir, "covers")
+	os.makedirs(covers_dir, exist_ok=True)
+	out_path = os.path.join(covers_dir, f"{md5sum}.jpg")
+	
+	if not force and os.path.isfile(out_path):
+		return True
+	
+	try:
+		# Use ffmpeg to extract cover art
+		subprocess.check_call(
+			["ffmpeg", "-y", "-i", input_path, "-an", "-vcodec", "copy", out_path],
+			stdout=subprocess.DEVNULL,
+			stderr=subprocess.DEVNULL
+		)
+		return True
+	except subprocess.CalledProcessError:
+		print(f"Warning: Could not extract cover from {input_path}")
+		return False
+
+
+def encode_flac_to_ogg(input_path: str, out_dir: str, out_name: str, force: bool = False) -> str:
+	"""
+	Encode a FLAC (or any audio supported by ffmpeg) file to mono OGG Vorbis with
 	fixed parameters and place the result under `<out_dir>/songs/<out_name>`.
 
 	Returns the absolute path to the output file. If the output already exists,
-	no work is performed.
+	no work is performed unless force is True.
 	"""
 	songs_dir = os.path.join(out_dir, "songs")
 	os.makedirs(songs_dir, exist_ok=True)
 	out_path = os.path.join(songs_dir, out_name)
-	if os.path.isfile(out_path):
+	if not force and os.path.isfile(out_path):
 		return out_path
-	# Use ffmpeg to convert to mono AAC 128k inside MP4 container, stripping metadata
+	# Use ffmpeg to convert to mono OGG Vorbis quality 5, stripping metadata
 	subprocess.check_call([
-        "ffmpeg", "-i", input_path, 
-        "-map", "0:a",
+		"ffmpeg", "-y", "-i", input_path,
+		"-map", "0:a",
 		"-map_metadata", "-1",
-        "-movflags", "faststart",
-        "-c:a", "aac",
-		"-b:a", "128k",
-        "-profile:a", "aac_low",    
-        "-ac", "1", "-ar", "44100",
-        out_path
-    ])
-
+		"-c:a", "libvorbis",
+		"-q:a", "5",
+		"-ac", "1", "-ar", "44100",
+		out_path
+	])
 	return out_path
 
 
-def output_mp4_name(md5sum: str) -> str:
-	"""Return canonical output file name for a song given its md5sum."""
-	return md5sum + ".mp4"
-
-
-def ensure_encoded_audio(input_path: str, md5sum: str, out_dir: str) -> str:
+def ensure_encoded_audio(input_path: str, md5sum: str, out_dir: str, force: bool = False) -> str:
 	"""
 	Ensure the audio file identified by md5sum has been encoded and stored under
-	`out_dir/songs/<md5>.mp4`. Returns the absolute output path.
+	`out_dir/songs/<md5>.ogg`. Returns the absolute OGG output path.
 	"""
-	out_name = output_mp4_name(md5sum)
-	return encode_flac_to_aac_mp4(input_path, out_dir, out_name)
+	out_name_ogg = output_ogg_name(md5sum)
+	return encode_flac_to_ogg(input_path, out_dir, out_name_ogg, force=force)
