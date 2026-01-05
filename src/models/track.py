@@ -21,7 +21,7 @@ class Track(NamedTuple):
     def load(config: Config, fname: str) -> "Track":
         md5sum, tags = metaflac_get_tags(fname)
         title = tags.get("TITLE")
-        artist = tags.get("ARTIST")
+        artist = tags.get("MAINARTIST", tags.get("ARTIST"))
         date = tags.get("ORIGINALDATE", tags.get("DATE"))
         if title is None:
             print(f"{fname}: No TITLE tag found.")
