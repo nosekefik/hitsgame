@@ -9,6 +9,7 @@ class Config(NamedTuple):
     language: str
     title: str
     out_dir: str = "out"
+    mp3_bitrate: str = "190k"
 
     @staticmethod
     def load(fname: str) -> "Config":

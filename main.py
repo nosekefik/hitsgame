@@ -10,7 +10,7 @@ from src.html_generator import generate_html, load_texts
 
 def main():
     parser = argparse.ArgumentParser(description="Generate hits game")
-    parser.add_argument("--force", action="store_true", help="Force regeneration of all OGG and cover files")
+    parser.add_argument("--force", action="store_true", help="Force regeneration of all MP3 and cover files")
     args = parser.parse_args()
     
     config = Config.load("config.toml")
@@ -18,7 +18,7 @@ def main():
     os.makedirs("build", exist_ok=True)
     track_dir = "tracks"
     
-    # If --force, delete all generated OGG and cover files
+    # If --force, delete all generated MP3 and cover files
     if args.force:
         songs_dir = os.path.join(config.out_dir, "songs")
         covers_dir = os.path.join(config.out_dir, "covers")

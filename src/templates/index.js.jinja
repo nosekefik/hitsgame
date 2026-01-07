@@ -17,11 +17,11 @@
   let currentSong = null;
   let songs = [];
 
-  function getOggNameFromUrl() {
+  function getMp3NameFromUrl() {
     const path = window.location.pathname;
-    // Handle both /filename.ogg and /path/to/filename.ogg
+    // Handle both /filename.mp3 and /path/to/filename.mp3
     const filename = path.split('/').pop();
-    if (filename.endsWith('.ogg')) {
+    if (filename.endsWith('.mp3')) {
       return filename;
     }
     return null;
@@ -61,7 +61,7 @@
       const randomIndex = Math.floor(Math.random() * songs.length);
       currentSong = songs[randomIndex];
       
-      audio.src = `${currentSong.url_ogg}`;
+      audio.src = `${currentSong.url_mp3}`;
       revealBtn.disabled = false;
       
       // Pre-fill info but keep hidden
@@ -81,11 +81,11 @@
     }
   }
 
-  const ogg = getOggNameFromUrl();
+  const mp3 = getMp3NameFromUrl();
 
-  if (ogg) {
+  if (mp3) {
     // QR MODE: Just play the specific song
-    audio.src = `songs/${ogg}`;
+    audio.src = `songs/${mp3}`;
     
     // Hide game UI elements in QR mode
     revealBtn.style.display = 'none';

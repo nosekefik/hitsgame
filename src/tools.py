@@ -16,7 +16,7 @@ def process_tracks(track_dir: str, config, force: bool = False) -> list:
 		fname_full = os.path.join(track_dir, fname)
 		# Extract cover and encode audio BEFORE loading Track so cover_url can be properly set
 		md5sum, _ = metaflac_get_tags(fname_full)
-		ensure_encoded_audio(fname_full, md5sum, config.out_dir, force=force)
+		ensure_encoded_audio(fname_full, md5sum, config.out_dir, config.mp3_bitrate, force=force)
 		extract_cover_art(fname_full, md5sum, config.out_dir, force=force)
 		# Now load the Track with cover already extracted
 		track = Track.load(config, fname_full)
@@ -46,9 +46,9 @@ def metaflac_get_tags(fname: str) -> Tuple[str, Dict[str, str]]:
 	return md5sum, {k.upper(): v for k, v in tags}
 
 
-def output_ogg_name(md5sum: str) -> str:
-	"""Return canonical output file name for an OGG file given its md5sum."""
-	return md5sum + ".ogg"
+def output_mp3_name(md5sum: str) -> str:
+	"""Return canonical output file name for an MP3 file given its md5sum."""
+	return md5sum + ".mp3"
 
 
 def extract_cover_art(input_path: str, md5sum: str, out_dir: str, force: bool = False) -> bool:
@@ -76,9 +76,9 @@ def extract_cover_art(input_path: str, md5sum: str, out_dir: str, force: bool = 
 		return False
 
 
-def encode_flac_to_ogg(input_path: str, out_dir: str, out_name: str, force: bool = False) -> str:
+def encode_flac_to_mp3(input_path: str, out_dir: str, out_name: str, bitrate: str, force: bool = False) -> str:
 	"""
-	Encode a FLAC (or any audio supported by ffmpeg) file to mono OGG Vorbis with
+	Encode a FLAC (or any audio supported by ffmpeg) file to mono MP3 at 190kbps with
 	fixed parameters and place the result under `<out_dir>/songs/<out_name>`.
 
 	Returns the absolute path to the output file. If the output already exists,
@@ -89,23 +89,23 @@ def encode_flac_to_ogg(input_path: str, out_dir: str, out_name: str, force: bool
 	out_path = os.path.join(songs_dir, out_name)
 	if not force and os.path.isfile(out_path):
 		return out_path
-	# Use ffmpeg to convert to mono OGG Vorbis quality 5, stripping metadata
+	# Use ffmpeg to convert to mono MP3 at configured bitrate, stripping metadata
 	subprocess.check_call([
 		"ffmpeg", "-y", "-i", input_path,
 		"-map", "0:a",
 		"-map_metadata", "-1",
-		"-c:a", "libvorbis",
-		"-q:a", "5",
+		"-c:a", "libmp3lame",
+		"-b:a", bitrate,
 		"-ac", "1", "-ar", "44100",
 		out_path
 	])
 	return out_path
 
 
-def ensure_encoded_audio(input_path: str, md5sum: str, out_dir: str, force: bool = False) -> str:
+def ensure_encoded_audio(input_path: str, md5sum: str, out_dir: str, bitrate: str, force: bool = False) -> str:
 	"""
 	Ensure the audio file identified by md5sum has been encoded and stored under
-	`out_dir/songs/<md5>.ogg`. Returns the absolute OGG output path.
+	`out_dir/songs/<md5>.mp3`. Returns the absolute MP3 output path.
 	"""
-	out_name_ogg = output_ogg_name(md5sum)
-	return encode_flac_to_ogg(input_path, out_dir, out_name_ogg, force=force)
+	out_name_mp3 = output_mp3_name(md5sum)
+	return encode_flac_to_mp3(input_path, out_dir, out_name_mp3, bitrate, force=force)

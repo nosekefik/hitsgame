@@ -35,7 +35,7 @@ Note: `flac`, `ffmpeg`, and `inkscape` must be in your system's PATH.
 2. Create a file named `config.toml` next to the `tracks` directory, and add the configuration as shown in the [Configuration](#configuration) section.
 3. Run `main.py`. It will print statistics about the track distribution over years and decades, so you can tweak the track selection to balance out the game.
 4. After running the script, you will find a new directory: `out` (or the directory specified in `out_dir`). This directory contains:
-   - The tracks, compressed and anonymized in OGG Vorbis format, inside a `songs` subdirectory. These files have no metadata and the filenames are long enough to be virtually unguessable.
+   - The tracks, compressed and anonymized in MP3 format at the configured bitrate (default 190kbps), inside a `songs` subdirectory. These files have no metadata and the filenames are long enough to be virtually unguessable.
    - The cover art extracted from the FLAC files, inside a `covers` subdirectory (as `.jpg` files).
    - The PDF file with the cards (`cards.pdf`).
    - The web player files (`index.html`, `index.json`, and related assets).
@@ -71,6 +71,10 @@ emoji = "🎸"
 
 # Output directory (optional, defaults to 'out').
 out_dir = "custom_out"
+
+# MP3 encoding bitrate (optional, defaults to '190k').
+# Any ffmpeg-valid value is accepted, e.g. '128k', '192k', '256k'.
+mp3_bitrate = "190k"
 ```
 
 
@@ -104,7 +108,7 @@ server {
 }
 ```
 
-This configuration ensures that the `songs` directory serves the audio files (OGG format), the `covers` directory serves the cover art images, and the root serves the web player files.
+This configuration ensures that the `songs` directory serves the audio files (MP3 format), the `covers` directory serves the cover art images, and the root serves the web player files.
 
 
 ## How to Play

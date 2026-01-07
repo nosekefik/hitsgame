@@ -37,7 +37,7 @@ class Track(NamedTuple):
         if date is None:
             print(f"{fname}: No ORIGINALDATE or DATE tag found.")
             sys.exit(1)
-        url = config.url_prefix + md5sum + ".ogg"
+        url = config.url_prefix + md5sum + ".mp3"
         
         # Check if cover exists
         cover_path = os.path.join(config.out_dir, "covers", md5sum + ".jpg")
