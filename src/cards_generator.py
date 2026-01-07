@@ -42,8 +42,8 @@ def generate_cards(tables, config):
 		if not os.path.isfile(pdf_file):
 			print(f"ERROR: PDF was not generated: {pdf_file}")
 			exit(1)
-	print("Waiting 15 seconds to ensure all PDFs are ready before merging...")
-	time.sleep(15)
+	print("Waiting 30 seconds to ensure all PDFs are ready before merging...")
+	time.sleep(30)
 	final_pdf = os.path.join(out_dir, "cards.pdf")
 	print(f"Merging PDFs into {final_pdf}...")
 	merger = PdfMerger()
