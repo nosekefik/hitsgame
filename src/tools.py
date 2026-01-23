@@ -54,6 +54,7 @@ def output_mp3_name(md5sum: str) -> str:
 def extract_cover_art(input_path: str, md5sum: str, out_dir: str, force: bool = False) -> bool:
 	"""
 	Extract cover art from FLAC file and save to <out_dir>/covers/<md5sum>.jpg.
+	Maximum size is 512x512 pixels (aspect ratio preserved).
 	Returns True if cover was extracted, False otherwise.
 	"""
 	covers_dir = os.path.join(out_dir, "covers")
@@ -64,9 +65,14 @@ def extract_cover_art(input_path: str, md5sum: str, out_dir: str, force: bool = 
 		return True
 	
 	try:
-		# Use ffmpeg to extract cover art
+		# Use ffmpeg to extract attached picture (cover) and resize to max 512x512
 		subprocess.check_call(
-			["ffmpeg", "-y", "-i", input_path, "-an", "-vcodec", "copy", out_path],
+			[
+				"ffmpeg", "-y", "-i", input_path,
+				"-map", "0:v:0", "-frames:v", "1",
+				"-vf", "scale=512:512:force_original_aspect_ratio=decrease",
+				out_path
+			],
 			stdout=subprocess.DEVNULL,
 			stderr=subprocess.DEVNULL
 		)
