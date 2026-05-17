@@ -10,4 +10,5 @@ dependencies = [
     "qrcode>=7.4.2",
     "soundfile>=0.13.1",
     "typing-extensions>=4.15.0",
+    "votify[librespot]>=1.9.9",
 ]

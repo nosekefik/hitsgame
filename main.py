@@ -2,6 +2,7 @@ import os
 import sys
 import argparse
 import shutil
+import subprocess
 from collections import Counter
 from src.models.config import Config
 from src.json_generator import generate_json
@@ -12,6 +13,7 @@ from src.html_generator import generate_html, load_texts
 def main():
     parser = argparse.ArgumentParser(description="Generate hits game")
     parser.add_argument("--force", action="store_true", help="Force regeneration of all MP3 and cover files")
+    parser.add_argument("--spotify", type=str, metavar="URL", help="Download a Spotify playlist using votify to the tracks folder")
     args = parser.parse_args()
     
     try:
@@ -25,7 +27,55 @@ def main():
     os.makedirs(config.out_dir, exist_ok=True)
     os.makedirs("build", exist_ok=True)
     track_dir = "tracks"
-    
+    os.makedirs(track_dir, exist_ok=True)
+
+    # Download from Spotify if URL is provided
+    if args.spotify:
+        print(f"Downloading from Spotify: {args.spotify}")
+        try:
+            # We use --album-folder-template "" etc to avoid subfolders if possible, or we just flatten later
+            subprocess.check_call([
+                "uv", "run", "votify", 
+                "--output", track_dir, 
+                "--album-folder-template", "",
+                "--compilation-folder-template", "",
+                "--podcast-folder-template", "",
+                "--no-album-folder-template", "",
+                args.spotify
+            ])
+        except subprocess.CalledProcessError as e:
+            print(f"\033[91mError downloading from Spotify: {e}\033[0m")
+            sys.exit(1)
+        
+        print("Converting downloaded tracks to FLAC and flattening directory structure...")
+        for root_dir, dirs, files in os.walk(track_dir, topdown=False):
+            for fname in files:
+                input_path = os.path.join(root_dir, fname)
+                # If it's already a FLAC file, just move it to the root track_dir if it's inside a subfolder
+                if fname.lower().endswith(".flac"):
+                    if root_dir != track_dir:
+                        dest_path = os.path.join(track_dir, fname)
+                        shutil.move(input_path, dest_path)
+                    continue
+                
+                # Convert other audio formats (ogg, m4a, mp3, etc.) to FLAC
+                if fname.lower().endswith((".ogg", ".m4a", ".mp3", ".wav", ".opus", ".aac")):
+                    flac_fname = os.path.splitext(fname)[0] + ".flac"
+                    flac_path = os.path.join(track_dir, flac_fname)
+                    print(f"Converting {fname} to FLAC...")
+                    try:
+                        subprocess.check_call([
+                            "ffmpeg", "-y", "-i", input_path, 
+                            "-c:a", "flac", flac_path
+                        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        os.remove(input_path)
+                    except subprocess.CalledProcessError:
+                        print(f"Warning: Failed to convert {fname} to FLAC.")
+            
+            # Remove empty subdirectories
+            if root_dir != track_dir and not os.listdir(root_dir):
+                os.rmdir(root_dir)
+
     # If --force, delete all generated MP3 and cover files
     if args.force:
         songs_dir = os.path.join(config.out_dir, "songs")
