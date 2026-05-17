@@ -5,3 +5,8 @@
 config.toml
 __pycache__/
 force.bat
+
+# Virtual environments
+.venv/
+venv/
+env/

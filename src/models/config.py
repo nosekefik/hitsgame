@@ -8,6 +8,7 @@ class Config(NamedTuple):
     crop_marks: bool
     language: str
     title: str
+    emoji: str = "🎸"
     out_dir: str = "out"
     mp3_bitrate: str = "190k"
 
@@ -15,4 +16,6 @@ class Config(NamedTuple):
     def load(fname: str) -> "Config":
         with open(fname, "rb") as f:
             toml = tomllib.load(f)
-            return Config(**toml)
+            # Filter keys to avoid errors from extra fields in the TOML file
+            valid_keys = {k: v for k, v in toml.items() if k in Config._fields}
+            return Config(**valid_keys)

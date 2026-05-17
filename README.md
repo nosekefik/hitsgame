@@ -22,7 +22,7 @@ Build your own version of the game [Hitster][hitster]. The resulting cards conta
 - **Music files:** FLAC files with proper tags (`TITLE`, `ARTIST`, `ALBUM`, and `ORIGINALDATE` or `DATE`). Cover art embedded in the FLAC file is optional but recommended.
 - **Hardware:** Printer, paper cutter or scissors, A4 paper (180 g/m²), tokens (from Hitster or alternatives like poker chips)
 - **Software:**
-  - Python ≥ 3.11 (`pip install -r requirements.txt`)
+  - Python ≥ 3.11 (or [uv](https://github.com/astral-sh/uv))
   - flac (for `metaflac`)
   - ffmpeg (for audio encoding and cover extraction)
   - inkscape (for PDF generation)
@@ -33,7 +33,7 @@ Note: `flac`, `ffmpeg`, and `inkscape` must be in your system's PATH.
 
 1. Create a directory named `tracks` and add the music files you want to include.
 2. Create a file named `config.toml` next to the `tracks` directory, and add the configuration as shown in the [Configuration](#configuration) section.
-3. Run `main.py`. It will print statistics about the track distribution over years and decades, so you can tweak the track selection to balance out the game.
+3. Run `main.py` (e.g., `uv run main.py` or `python main.py` after installing dependencies via `pip install -r requirements.txt`). It will print statistics about the track distribution over years and decades, so you can tweak the track selection to balance out the game.
 4. After running the script, you will find a new directory: `out` (or the directory specified in `out_dir`). This directory contains:
    - The tracks, compressed and anonymized in MP3 format at the configured bitrate (default 190kbps), inside a `songs` subdirectory. These files have no metadata and the filenames are long enough to be virtually unguessable.
    - The cover art extracted from the FLAC files, inside a `covers` subdirectory (as `.jpg` files).

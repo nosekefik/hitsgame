@@ -1,4 +1,5 @@
 import os
+import sys
 import argparse
 import shutil
 from collections import Counter
@@ -13,7 +14,14 @@ def main():
     parser.add_argument("--force", action="store_true", help="Force regeneration of all MP3 and cover files")
     args = parser.parse_args()
     
-    config = Config.load("config.toml")
+    try:
+        config = Config.load("config.toml")
+    except FileNotFoundError:
+        print("\033[91mError: 'config.toml' file not found.\033[0m")
+        print("Please copy 'config.toml.example' to 'config.toml' and edit it with your configuration.")
+        print("\nExample:")
+        print("  cp config.toml.example config.toml")
+        sys.exit(1)
     os.makedirs(config.out_dir, exist_ok=True)
     os.makedirs("build", exist_ok=True)
     track_dir = "tracks"

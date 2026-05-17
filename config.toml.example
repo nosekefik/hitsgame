@@ -1,0 +1,28 @@
+# The base URL from which your webserver will serve the track music files.
+# Must end with a trailing slash '/'.
+url_prefix = "http://example.com/"
+
+# Font to use on the cards.
+font = "Arial"
+
+# Draw grid: enable (true) for scissors, disable (false) for paper cutter.
+grid = true
+
+# Whether to include crop marks at the sides of the page.
+crop_marks = false
+
+# Default language for the game interface texts ('en', 'es', 'ca').
+language = "en"
+
+# Customized game title.
+title = "Custom Hits!"
+
+# Default emoji for icons (optional, defaults to '🎸').
+emoji = "🎸"
+
+# Output directory for the generated PDF and website (optional, defaults to 'out').
+out_dir = "out"
+
+# MP3 encoding bitrate (optional, defaults to '190k').
+# Any ffmpeg-valid value is accepted, e.g. '128k', '192k', '256k'.
+mp3_bitrate = "190k"
